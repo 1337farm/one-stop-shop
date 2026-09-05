@@ -17,11 +17,27 @@ import kotlin.concurrent.thread
 
 class MainActivity : AppCompatActivity() {
 
+    companion object {
+        var daemonPort: Int = 0
+    }
+
     private lateinit var webView: WebView
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
+
+        // Dynamically assign a free ephemeral port on first launch
+        if (daemonPort == 0) {
+            try {
+                val serverSocket = java.net.ServerSocket(0, 50, java.net.InetAddress.getByName("127.0.0.1"))
+                daemonPort = serverSocket.localPort
+                serverSocket.close()
+            } catch (e: Exception) {
+                e.printStackTrace()
+                daemonPort = 3000 // Fallback
+            }
+        }
 
         // Initialize WebView
         webView = findViewById(R.id.webView)
@@ -50,7 +66,7 @@ class MainActivity : AppCompatActivity() {
                 description: String?,
                 failingUrl: String?
             ) {
-                if (failingUrl == "http://localhost:3000/") {
+                if (failingUrl == "http://localhost:$daemonPort/") {
                     val fallbackHtml = """
                         <html>
                             <body style="background-color: #121212; color: #00ffcc; font-family: monospace; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0;">
@@ -73,7 +89,7 @@ class MainActivity : AppCompatActivity() {
             }
         }
 
-        webView.loadUrl("http://localhost:3000/")
+        webView.loadUrl("http://localhost:$daemonPort/")
 
         // Inject JavascriptInterface to trigger extraction manually
         webView.addJavascriptInterface(WebAppInterface(this), "NativeHost")

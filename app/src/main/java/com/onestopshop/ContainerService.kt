@@ -102,6 +102,7 @@ class ContainerService : Service() {
                     "-w", "/root",
                     "/bin/sh", "-c", "sleep infinity"
                 )
+                pb.environment()["PORT"] = MainActivity.daemonPort.toString()
                 pb.redirectErrorStream(true)
                 pb.directory(rootFsDir)
 
