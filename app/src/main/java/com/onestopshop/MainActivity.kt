@@ -77,9 +77,8 @@ class MainActivity : AppCompatActivity() {
                 connection.setRequestProperty("Accept", "application/json")
                 connection.doOutput = true
 
-                // Placeholder for actual client secrets
-                val clientId = "CLIENT_ID_PLACEHOLDER"
-                val clientSecret = "CLIENT_SECRET_PLACEHOLDER"
+                val clientId = BuildConfig.GITHUB_CLIENT_ID
+                val clientSecret = BuildConfig.GITHUB_CLIENT_SECRET
                 val postData = "client_id=$clientId&client_secret=$clientSecret&code=$code"
 
                 OutputStreamWriter(connection.outputStream).use { writer ->

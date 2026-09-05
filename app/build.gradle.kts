@@ -1,6 +1,17 @@
+import java.util.Properties
+import java.io.FileInputStream
+import java.io.FileNotFoundException
+
 plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.android")
+}
+
+val localProperties = Properties()
+try {
+    localProperties.load(FileInputStream(rootProject.file("local.properties")))
+} catch (e: FileNotFoundException) {
+    // Ignore if not present
 }
 
 android {
@@ -15,6 +26,13 @@ android {
         versionName = "1.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+
+        buildConfigField("String", "GITHUB_CLIENT_ID", "\"${localProperties.getProperty("GITHUB_CLIENT_ID", "")}\"")
+        buildConfigField("String", "GITHUB_CLIENT_SECRET", "\"${localProperties.getProperty("GITHUB_CLIENT_SECRET", "")}\"")
+    }
+
+    buildFeatures {
+        buildConfig = true
     }
 
     buildTypes {
