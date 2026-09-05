@@ -4,6 +4,7 @@ import android.content.Intent
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
+import android.webkit.JavascriptInterface
 import android.webkit.WebView
 import android.webkit.WebViewClient
 import androidx.appcompat.app.AppCompatActivity
@@ -34,19 +35,27 @@ class MainActivity : AppCompatActivity() {
         webView.webViewClient = WebViewClient()
         webView.loadUrl("http://localhost:3000")
 
-        // Extract assets
-        val extractor = AssetExtractor(this)
-        extractor.extractAssets()
-
-        // Start foreground service
-        val serviceIntent = Intent(this, ContainerService::class.java)
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            startForegroundService(serviceIntent)
-        } else {
-            startService(serviceIntent)
-        }
+        // Inject JavascriptInterface to trigger extraction manually
+        webView.addJavascriptInterface(WebAppInterface(this), "NativeHost")
 
         handleIntent(intent)
+    }
+
+    inner class WebAppInterface(private val context: MainActivity) {
+        @JavascriptInterface
+        fun installNow() {
+            // Extract assets
+            val extractor = AssetExtractor(context)
+            extractor.extractAssets()
+
+            // Start foreground service
+            val serviceIntent = Intent(context, ContainerService::class.java)
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                context.startForegroundService(serviceIntent)
+            } else {
+                context.startService(serviceIntent)
+            }
+        }
     }
 
     override fun onNewIntent(intent: Intent) {

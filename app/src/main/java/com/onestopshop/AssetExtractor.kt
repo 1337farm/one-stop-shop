@@ -19,6 +19,16 @@ class AssetExtractor(private val context: Context) {
             }
 
             try {
+                // Extract proot binary
+                assetManager.open("proot").use { inputStream ->
+                    val prootFile = File(targetDir, "proot")
+                    FileOutputStream(prootFile).use { output ->
+                        inputStream.copyTo(output)
+                    }
+                    prootFile.setExecutable(true, false)
+                }
+
+                // Extract ubuntu rootfs
                 assetManager.open("ubuntu-rootfs.tar.gz").use { inputStream ->
                     GZIPInputStream(inputStream).use { gzipStream ->
                         TarArchiveInputStream(gzipStream).use { tarStream ->
@@ -40,8 +50,8 @@ class AssetExtractor(private val context: Context) {
                                         tarStream.copyTo(output)
                                     }
 
-                                    // Set executable permissions for container binaries
-                                    if (entry.name.startsWith("bin/") || entry.name.startsWith("usr/bin/")) {
+                                    // Set executable permissions for container binaries based on tar entry mode
+                                    if ((entry.mode and 0b001_001_001) != 0) { // Check for execute bit (owner, group, or other)
                                         outputFile.setExecutable(true, false)
                                     }
                                 }
