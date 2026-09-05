@@ -18,9 +18,13 @@ jobs:
       contents: write
     if: github.event.pull_request.draft == false && github.event.pull_request.head.repo.full_name == github.repository
     steps:
-      - name: Enable pull request automerge
-        uses: peter-evans/enable-pull-request-automerge@v3
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-          pull-request-number: ${{ github.event.pull_request.number }}
-          merge-method: squash
+      - name: Enable squash auto-merge
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          PR="${{ github.event.pull_request.number }}"
+          if [ -z "$(gh pr view "$PR" --repo "${{ github.repository }}" --json autoMergeRequest --jq '.autoMergeRequest')" ]; then
+            gh pr merge "$PR" --repo "${{ github.repository }}" --auto --squash
+          else
+            echo "auto-merge already enabled on #$PR"
+          fi
