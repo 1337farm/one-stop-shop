@@ -32,8 +32,48 @@ class MainActivity : AppCompatActivity() {
 
         // Prevent background sleep cycles, ensuring persistent WebSocket communication
         webView.keepScreenOn = true
-        webView.webViewClient = WebViewClient()
-        webView.loadUrl("http://localhost:3000")
+
+        webView.webViewClient = object : WebViewClient() {
+            @Deprecated("Deprecated in Java")
+            override fun shouldOverrideUrlLoading(view: WebView?, url: String?): Boolean {
+                if (url != null && url.startsWith("opencode://")) {
+                    val intent = Intent(Intent.ACTION_VIEW, Uri.parse(url))
+                    startActivity(intent)
+                    return true
+                }
+                return false
+            }
+
+            override fun onReceivedError(
+                view: WebView?,
+                errorCode: Int,
+                description: String?,
+                failingUrl: String?
+            ) {
+                if (failingUrl == "http://localhost:3000/") {
+                    val fallbackHtml = """
+                        <html>
+                            <body style="background-color: #121212; color: #00ffcc; font-family: monospace; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0;">
+                                <div style="text-align: center;">
+                                    <h1>Waiting for OSS Daemon...</h1>
+                                    <p>The container environment is booting or extracting.</p>
+                                    <p style="font-size: 0.8em; color: #888;">(Auto-reloading in 3 seconds)</p>
+                                    <button onclick="window.NativeHost.installNow()" style="margin-top: 20px; padding: 10px 20px; background-color: #00ffcc; color: #121212; border: none; font-weight: bold; cursor: pointer;">Install Now (Manual Trigger)</button>
+                                </div>
+                                <script>
+                                    setTimeout(() => location.reload(), 3000);
+                                </script>
+                            </body>
+                        </html>
+                    """.trimIndent()
+                    view?.loadDataWithBaseURL(failingUrl, fallbackHtml, "text/html", "UTF-8", null)
+                } else {
+                    super.onReceivedError(view, errorCode, description, failingUrl)
+                }
+            }
+        }
+
+        webView.loadUrl("http://localhost:3000/")
 
         // Inject JavascriptInterface to trigger extraction manually
         webView.addJavascriptInterface(WebAppInterface(this), "NativeHost")

@@ -11,16 +11,20 @@ import android.os.Build
 import android.os.IBinder
 import android.os.PowerManager
 import androidx.core.app.NotificationCompat
+import java.io.File
+import kotlin.concurrent.thread
 
 class ContainerService : Service() {
 
     private var wakeLock: PowerManager.WakeLock? = null
     private var wifiLock: WifiManager.WifiLock? = null
+    private var containerProcess: Process? = null
 
     override fun onCreate() {
         super.onCreate()
         acquireLocks()
         startForegroundService()
+        startContainerProcess()
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
@@ -29,6 +33,7 @@ class ContainerService : Service() {
 
     override fun onDestroy() {
         super.onDestroy()
+        containerProcess?.destroy()
         releaseLocks()
     }
 
@@ -80,5 +85,39 @@ class ContainerService : Service() {
             .build()
 
         startForeground(1, notification)
+    }
+
+    private fun startContainerProcess() {
+        val rootFsDir = File(filesDir, "ubuntu_rootfs")
+        val prootBin = File(rootFsDir, "proot")
+
+        if (!prootBin.exists()) return
+
+        thread {
+            try {
+                val pb = ProcessBuilder(
+                    prootBin.absolutePath,
+                    "-r", rootFsDir.absolutePath,
+                    "-0",
+                    "-w", "/root",
+                    "/bin/sh", "-c", "sleep infinity"
+                )
+                pb.redirectErrorStream(true)
+                pb.directory(rootFsDir)
+
+                val process = pb.start()
+                containerProcess = process
+
+                process.inputStream.bufferedReader().use { reader ->
+                    var line = reader.readLine()
+                    while (line != null) {
+                        line = reader.readLine()
+                    }
+                }
+                process.waitFor()
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+        }
     }
 }
