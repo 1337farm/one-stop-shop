@@ -9,8 +9,12 @@ use serde_json::Value;
 use rig::providers::openai::Client;
 use rig::completion::Prompt;
 use tools::BashExecutor;
+use wasm::WasmTransformer;
+use memory::MemoryEngine;
 
 mod tools;
+mod wasm;
+mod memory;
 
 #[derive(Serialize, Deserialize, Debug)]
 struct RpcRequest {
@@ -38,6 +42,8 @@ struct RpcError {
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    tracing_subscriber::fmt::init();
+
     let port = env::var("PORT").unwrap_or_else(|_| "8080".to_string());
     let addr = format!("127.0.0.1:{}", port);
 
@@ -48,14 +54,18 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .agent("gpt-4")
         .preamble("You are an autonomous orchestrator daemon running on a Linux userland.")
         .tool(BashExecutor::default())
+        .tool(WasmTransformer::default())
         .build();
     let agent = Arc::new(agent);
+
+    let memory_engine = Arc::new(MemoryEngine::new("oss_memory.db").await?);
 
     println!("Listening on: {}", addr);
     let listener = TcpListener::bind(&addr).await?;
 
     while let Ok((stream, _)) = listener.accept().await {
         let agent = Arc::clone(&agent);
+        let memory = Arc::clone(&memory_engine);
 
         tokio::spawn(async move {
             let ws_stream = accept_async(stream).await.expect("Error during the websocket handshake occurred");
@@ -78,9 +88,14 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                                         if let Some(prompt) = params.get("prompt").and_then(|p| p.as_str()) {
                                             match agent.prompt(prompt).await {
                                                 Ok(completion) => {
+                                                    let completion_val = serde_json::json!(completion);
+                                                    if let Err(e) = memory.log_trace(prompt, &completion_val).await {
+                                                        eprintln!("Failed to log trace to memory: {}", e);
+                                                    }
+
                                                     RpcResponse {
                                                         jsonrpc: "2.0".to_string(),
-                                                        result: Some(serde_json::json!(completion)),
+                                                        result: Some(completion_val),
                                                         error: None,
                                                         id: req.id,
                                                     }
