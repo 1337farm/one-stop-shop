@@ -18,3 +18,5 @@ rusqlite = { version = "0.32.1", features = ["bundled"] }
 tokio-rusqlite = "0.6.0"
 tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+chrono = "0.4.45"
+schemars = "0.8.22"

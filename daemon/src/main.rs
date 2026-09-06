@@ -10,7 +10,7 @@ use rig::providers::openai::Client;
 use rig::completion::Prompt;
 use tools::BashExecutor;
 use wasm::WasmTransformer;
-use memory::MemoryEngine;
+use memory::{MemoryEngine, HeuristicEvaluator, EvaluationResult};
 
 mod tools;
 mod wasm;
@@ -60,12 +60,18 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let memory_engine = Arc::new(MemoryEngine::new("oss_memory.db").await?);
 
+    // Initialize the Heuristic Evaluator
+    let evaluator = Arc::new(HeuristicEvaluator::new(
+        openai_client.extractor::<EvaluationResult>("gpt-4").build()
+    ));
+
     println!("Listening on: {}", addr);
     let listener = TcpListener::bind(&addr).await?;
 
     while let Ok((stream, _)) = listener.accept().await {
         let agent = Arc::clone(&agent);
         let memory = Arc::clone(&memory_engine);
+        let evaluator = Arc::clone(&evaluator);
 
         tokio::spawn(async move {
             let ws_stream = accept_async(stream).await.expect("Error during the websocket handshake occurred");
@@ -92,6 +98,31 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                                                     if let Err(e) = memory.log_trace(prompt, &completion_val).await {
                                                         eprintln!("Failed to log trace to memory: {}", e);
                                                     }
+
+                                                    // Periodically evaluate traces instead of every single prompt
+                                                    // For now, we can check a simple mod condition on a static or passed counter,
+                                                    // but to avoid global mutable state we evaluate if the recent traces count is > 0
+                                                    // and we limit evaluating to avoid spamming the LLM
+                                                    let memory_clone = Arc::clone(&memory);
+                                                    let evaluator_clone = Arc::clone(&evaluator);
+                                                    tokio::spawn(async move {
+                                                        let trace_count_res = memory_clone.get_recent_traces(1).await.map_err(|e| e.to_string());
+                                                        if let Ok(recent) = trace_count_res {
+                                                            if !recent.is_empty() && recent[0].0 % 5 == 0 {
+                                                                let traces_result = memory_clone.get_recent_traces(10).await.map_err(|e| e.to_string());
+                                                                match traces_result {
+                                                                    Ok(traces) => {
+                                                                        if let Err(e) = evaluator_clone.evaluate_and_process(memory_clone, traces).await {
+                                                                            eprintln!("Background evaluation failed: {}", e);
+                                                                        }
+                                                                    }
+                                                                    Err(e) => {
+                                                                        eprintln!("Failed to get recent traces for evaluation: {}", e);
+                                                                    }
+                                                                }
+                                                            }
+                                                        }
+                                                    });
 
                                                     RpcResponse {
                                                         jsonrpc: "2.0".to_string(),
