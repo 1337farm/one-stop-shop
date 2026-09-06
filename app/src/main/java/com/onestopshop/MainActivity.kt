@@ -83,18 +83,44 @@ class MainActivity : AppCompatActivity() {
                             .message { text-align: center; padding: 20px; background: white; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
                             .spinner { margin: 20px auto; width: 40px; height: 40px; border: 4px solid #f3f3f3; border-top: 4px solid #3498db; border-radius: 50%; animation: spin 1s linear infinite; }
                             @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+                            .btn { background-color: #3498db; border: none; color: white; padding: 15px 32px; text-align: center; text-decoration: none; display: inline-block; font-size: 16px; margin: 4px 2px; cursor: pointer; border-radius: 8px; }
                         </style>
                         <script>
-                            setTimeout(function() {
-                                window.location.reload();
-                            }, 3000);
+                            function checkStatus() {
+                                if (window.NativeHost && window.NativeHost.isInstalled()) {
+                                    window.NativeHost.startContainer();
+                                    document.getElementById('install-btn').style.display = 'none';
+                                    document.getElementById('connecting').style.display = 'block';
+                                    setTimeout(function() { window.location.reload(); }, 3000);
+                                } else {
+                                    document.getElementById('install-btn').style.display = 'inline-block';
+                                    document.getElementById('connecting').style.display = 'none';
+                                }
+                            }
+
+                            function install() {
+                                if (window.NativeHost) {
+                                    document.getElementById('install-btn').style.display = 'none';
+                                    document.getElementById('connecting').style.display = 'block';
+                                    document.getElementById('status-text').innerText = 'Installing and starting environment...';
+
+                                    setTimeout(function() {
+                                        window.NativeHost.installNow();
+                                        setTimeout(function() { window.location.reload(); }, 3000);
+                                    }, 100);
+                                }
+                            }
+                            window.onload = checkStatus;
                         </script>
                     </head>
                     <body>
                         <div class="message">
-                            <h2>Connecting to Container...</h2>
-                            <div class="spinner"></div>
-                            <p>Please wait while the environment starts.</p>
+                            <button id="install-btn" class="btn" style="display:none;" onclick="install()">Install Environment</button>
+                            <div id="connecting" style="display:none;">
+                                <h2>Connecting to Container...</h2>
+                                <div class="spinner"></div>
+                                <p id="status-text">Please wait while the environment starts.</p>
+                            </div>
                         </div>
                     </body>
                     </html>
@@ -112,7 +138,11 @@ class MainActivity : AppCompatActivity() {
             // Extract assets
             val extractor = AssetExtractor(context)
             extractor.extractAssets()
+            startContainer()
+        }
 
+        @JavascriptInterface
+        fun startContainer() {
             // Start foreground service
             val serviceIntent = Intent(context, ContainerService::class.java)
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
@@ -120,6 +150,13 @@ class MainActivity : AppCompatActivity() {
             } else {
                 context.startService(serviceIntent)
             }
+        }
+
+        @JavascriptInterface
+        fun isInstalled(): Boolean {
+            val targetDir = File(context.filesDir, "ubuntu_rootfs")
+            val prootFile = File(targetDir, "proot")
+            return prootFile.exists()
         }
     }
 
