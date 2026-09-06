@@ -13,9 +13,25 @@ import java.io.File
 import java.io.OutputStreamWriter
 import java.net.HttpURLConnection
 import java.net.URL
+import java.net.ServerSocket
+import java.net.InetAddress
 import kotlin.concurrent.thread
 
 class MainActivity : AppCompatActivity() {
+
+    companion object {
+        var allocatedPort: Int = 3000
+
+        init {
+            try {
+                val serverSocket = ServerSocket(0, 1, InetAddress.getByName("127.0.0.1"))
+                allocatedPort = serverSocket.localPort
+                serverSocket.close()
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+        }
+    }
 
     private lateinit var webView: WebView
 
@@ -32,13 +48,62 @@ class MainActivity : AppCompatActivity() {
 
         // Prevent background sleep cycles, ensuring persistent WebSocket communication
         webView.keepScreenOn = true
-        webView.webViewClient = WebViewClient()
-        webView.loadUrl("http://localhost:3000")
+        webView.webViewClient = CustomWebViewClient()
+        webView.loadUrl("http://127.0.0.1:$allocatedPort")
 
         // Inject JavascriptInterface to trigger extraction manually
         webView.addJavascriptInterface(WebAppInterface(this), "NativeHost")
 
         handleIntent(intent)
+    }
+
+    inner class CustomWebViewClient : WebViewClient() {
+        override fun shouldOverrideUrlLoading(view: WebView?, request: android.webkit.WebResourceRequest?): Boolean {
+            val url = request?.url
+            if (url != null && url.scheme == "opencode") {
+                val intent = Intent(Intent.ACTION_VIEW, url)
+                startActivity(intent)
+                return true
+            }
+            return super.shouldOverrideUrlLoading(view, request)
+        }
+
+        override fun onReceivedError(
+            view: WebView?,
+            request: android.webkit.WebResourceRequest?,
+            error: android.webkit.WebResourceError?
+        ) {
+            if (request?.isForMainFrame == true) {
+                val fallbackHtml = """
+                    <html>
+                    <head>
+                        <meta name="viewport" content="width=device-width, initial-scale=1">
+                        <style>
+                            body { font-family: sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; background-color: #f0f0f0; }
+                            .message { text-align: center; padding: 20px; background: white; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+                            .spinner { margin: 20px auto; width: 40px; height: 40px; border: 4px solid #f3f3f3; border-top: 4px solid #3498db; border-radius: 50%; animation: spin 1s linear infinite; }
+                            @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+                        </style>
+                        <script>
+                            setTimeout(function() {
+                                window.location.reload();
+                            }, 3000);
+                        </script>
+                    </head>
+                    <body>
+                        <div class="message">
+                            <h2>Connecting to Container...</h2>
+                            <div class="spinner"></div>
+                            <p>Please wait while the environment starts.</p>
+                        </div>
+                    </body>
+                    </html>
+                """.trimIndent()
+                view?.loadDataWithBaseURL(request.url.toString(), fallbackHtml, "text/html", "UTF-8", null)
+            } else {
+                super.onReceivedError(view, request, error)
+            }
+        }
     }
 
     inner class WebAppInterface(private val context: MainActivity) {
