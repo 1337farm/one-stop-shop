@@ -21,15 +21,15 @@
  * Implement native GitHub OAuth orchestration using custom URI callbacks (opencode://oauth-callback), automatically exchanging the auth code for a token and injecting it into /root/.gitconfig.
 
 ## Phase 2: Custom Rust Agent Orchestration Daemon
-### Core Architecture & Provider Integration
- * Replace external orchestrator binaries with an in-house static Rust binary compiled for aarch64-unknown-linux-musl deployed inside the container's /usr/local/bin/.
- * Integrate rig-core to manage unified API completions across DeepSeek, OpenRouter, and local OpenAI-compatible endpoints.
- * Implement an asynchronous JSON-RPC / WebSocket transport over tokio to serve state changes and stream tokens to the frontend client.
+### Core Architecture & Provider Integration (Completed Steps)
+ * Initialized an in-house static Rust binary project (`daemon`) configured for deployment inside the container.
+ * Integrated `rig-core` (using `rig::tool::Tool`) to manage unified API completions and model orchestration.
+ * Implemented an asynchronous JSON-RPC / WebSocket transport over `tokio` binding to the injected `PORT` environment variable to serve the frontend client.
 
-### Tool Execution Engine
- * Derive tools using typed Rust structs (rig_core::tool::PortableTool) for compile-time schema validation and zero-cost serialization.
- * Host CLI Dispatcher: Directly invoke native Linux utilities (ripgrep, git, bash) via tokio::process::Command inside the PRoot environment, capturing structured stdout/stderr.
- * WASM Safety Sandbox: Embed wasmi or wasmtime inside the Rust daemon with strict fuel consumption (CPU instruction budgeting) and memory limits to execute ad-hoc, untrusted agent data-transformation scripts.
+### Tool Execution Engine (Completed Steps)
+ * Derived tools using typed Rust structs (`rig::tool::Tool`) for compile-time schema validation and zero-cost serialization.
+ * Host CLI Dispatcher: Created a `BashExecutor` tool that directly invokes native Linux utilities via `tokio::process::Command` inside the environment, returning structured `stdout`/`stderr`.
+ * *Pending:* Embed `wasmi` or `wasmtime` inside the Rust daemon with strict fuel consumption and memory limits to execute ad-hoc, untrusted agent data-transformation scripts.
 
 ## Phase 3: Dynamic Macro-Memory & Milestone Distillation
 ### Dynamic Heuristic Evaluator
