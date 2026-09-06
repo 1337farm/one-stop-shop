@@ -13,5 +13,5 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "OneStopShop"
+rootProject.name = "ForgeRig"
 include(":app")
