@@ -1,6 +1,6 @@
-# OneStopShop
+# ForgeRig
 
-OneStopShop (OSS, formerly OpenCode) is a standalone ARM64 Linux engine providing an isolated Linux userland on unrooted Android devices.
+ForgeRig (formerly OneStopShop / OpenCode) is a standalone ARM64 Linux engine providing an isolated Linux userland on unrooted Android devices.
 
 ## Features
 

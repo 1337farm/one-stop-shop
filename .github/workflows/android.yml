@@ -56,7 +56,7 @@ jobs:
         uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: OneStopShop-Debug-APK
+          name: ForgeRig-Debug-APK
           path: app/build/outputs/apk/debug/*.apk
           retention-days: 7
 
@@ -79,7 +79,7 @@ jobs:
             "$SHA" "$DATE" "$APK_NAME" "$SUM" > "$OUT/apk-manifest.json"
           gh release delete latest --yes --cleanup-tag --repo "${{ github.repository }}" 2>/dev/null || true
           gh release create latest "$OUT/$APK_NAME" "$OUT/apk-manifest.json" --repo "${{ github.repository }}" \
-            --title "OneStopShop APK (latest)" \
+            --title "ForgeRig APK (latest)" \
             --notes "Rolling sideloadable debug APK built from source. Re-published on every green build."
 
   automerge:
