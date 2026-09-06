@@ -1,6 +1,10 @@
 import java.util.Properties
 import java.io.FileInputStream
 import java.io.FileNotFoundException
+import java.net.URL
+import java.net.HttpURLConnection
+import java.io.FileOutputStream
+import java.io.InputStream
 
 plugins {
     id("com.android.application")
@@ -62,4 +66,50 @@ dependencies {
     testImplementation("junit:junit:4.13.2")
     androidTestImplementation("androidx.test.ext:junit:1.1.5")
     androidTestImplementation("androidx.test.espresso:espresso-core:3.5.1")
+}
+
+tasks.register("downloadAssets") {
+    val assetsDir = file("src/main/assets")
+    val prootFile = file("src/main/assets/proot")
+    val rootfsFile = file("src/main/assets/ubuntu-rootfs.tar.gz")
+
+    doLast {
+        if (!assetsDir.exists()) {
+            assetsDir.mkdirs()
+        }
+
+        // Check if proot exists and is not empty
+        if (!prootFile.exists() || prootFile.length() < 1024) {
+            println("Downloading proot binary...")
+            val prootUrl = URL("https://github.com/proot-me/proot/releases/download/v5.3.0/proot-v5.3.0-aarch64-static")
+            prootUrl.openStream().use { input: InputStream ->
+                FileOutputStream(prootFile).use { output: FileOutputStream ->
+                    input.copyTo(output)
+                }
+            }
+        }
+
+        // Check if rootfs exists and is not empty/dummy
+        if (!rootfsFile.exists() || rootfsFile.length() < 1024) {
+            println("Downloading Ubuntu rootfs...")
+            // Follow redirects properly for CD image
+            var connection = URL("http://cdimage.ubuntu.com/ubuntu-base/releases/22.04/release/ubuntu-base-22.04.4-base-arm64.tar.gz").openConnection() as HttpURLConnection
+            connection.instanceFollowRedirects = true
+            var redirectCount = 0
+            while (connection.responseCode / 100 == 3 && redirectCount < 5) {
+                val newUrl = connection.getHeaderField("Location")
+                connection = URL(newUrl).openConnection() as HttpURLConnection
+                redirectCount++
+            }
+            connection.inputStream.use { input: InputStream ->
+                FileOutputStream(rootfsFile).use { output: FileOutputStream ->
+                    input.copyTo(output)
+                }
+            }
+        }
+    }
+}
+
+tasks.named("preBuild") {
+    dependsOn("downloadAssets")
 }
