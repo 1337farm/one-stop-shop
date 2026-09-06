@@ -102,6 +102,7 @@ class ContainerService : Service() {
                     "-w", "/root",
                     "/bin/sh"
                 )
+                pb.environment()["PORT"] = MainActivity.allocatedPort.toString()
                 pb.redirectErrorStream(true)
                 pb.directory(rootFsDir)
 
