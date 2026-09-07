@@ -60,7 +60,7 @@ class MainActivity : AppCompatActivity() {
     inner class CustomWebViewClient : WebViewClient() {
         override fun shouldOverrideUrlLoading(view: WebView?, request: android.webkit.WebResourceRequest?): Boolean {
             val url = request?.url
-            if (url != null && url.scheme == "opencode") {
+            if (url != null && url.scheme == "forgerig") {
                 val intent = Intent(Intent.ACTION_VIEW, url)
                 startActivity(intent)
                 return true
@@ -170,7 +170,7 @@ class MainActivity : AppCompatActivity() {
         val data: Uri? = intent?.data
 
         if (Intent.ACTION_VIEW == action && data != null) {
-            if (data.scheme == "opencode" && data.host == "oauth-callback") {
+            if (data.scheme == "forgerig" && data.host == "oauth-callback") {
                 val code = data.getQueryParameter("code")
                 if (code != null) {
                     exchangeCodeForToken(code)

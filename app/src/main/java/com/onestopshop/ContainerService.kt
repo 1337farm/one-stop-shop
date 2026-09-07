@@ -43,12 +43,12 @@ class ContainerService : Service() {
 
     private fun acquireLocks() {
         val powerManager = getSystemService(Context.POWER_SERVICE) as PowerManager
-        wakeLock = powerManager.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "OneStopShop::ContainerWakeLock").apply {
+        wakeLock = powerManager.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "ForgeRig::ContainerWakeLock").apply {
             acquire()
         }
 
         val wifiManager = applicationContext.getSystemService(Context.WIFI_SERVICE) as WifiManager
-        wifiLock = wifiManager.createWifiLock(WifiManager.WIFI_MODE_FULL_HIGH_PERF, "OneStopShop::ContainerWifiLock").apply {
+        wifiLock = wifiManager.createWifiLock(WifiManager.WIFI_MODE_FULL_HIGH_PERF, "ForgeRig::ContainerWifiLock").apply {
             acquire()
         }
     }
@@ -79,7 +79,7 @@ class ContainerService : Service() {
         }
 
         val notification: Notification = NotificationCompat.Builder(this, channelId)
-            .setContentTitle("OneStopShop")
+            .setContentTitle("ForgeRig")
             .setContentText("Container daemon is running in the background")
             .setSmallIcon(android.R.drawable.ic_dialog_info)
             .build()
