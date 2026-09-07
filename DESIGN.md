@@ -1,4 +1,4 @@
-# OneStopShop
+# ForgeRig
 
 | Component | Core Technology | Primary Responsibility |
 |---|---|---|
@@ -18,7 +18,7 @@
 ### Container Lifecycle & Connection Persistence
  * Wrap the PRoot container process inside an Android Foreground Service equipped with PARTIAL_WAKE_LOCK and explicit Wi-Fi locks to eliminate OS background thread suspension.
  * Configure the embedded Android WebView client to prevent background sleep cycles, ensuring persistent WebSocket communication between the UI and local daemons.
- * Implement native GitHub OAuth orchestration using custom URI callbacks (opencode://oauth-callback), automatically exchanging the auth code for a token and injecting it into /root/.gitconfig.
+ * Implement native GitHub OAuth orchestration using custom URI callbacks (forgerig://oauth-callback), automatically exchanging the auth code for a token and injecting it into /root/.gitconfig.
 
 ## Phase 2: Custom Rust Agent Orchestration Daemon
 ### Core Architecture & Provider Integration (Completed Steps)
@@ -71,14 +71,14 @@
 ## Screens
 ### Screen 1: Launch & Setup
  * Logo & Monogram: Replaced the interlocking "OC" neon loop with a three-node geometric neon OSS glyph.
- * Branding & Labels: Primary text displays OneStopShop with the standalone descriptor; all legacy "OpenCode" (OC) branding and secondary sub-labels removed.
+ * Branding & Labels: Primary text displays ForgeRig with the standalone descriptor; all legacy "OpenCode" (OC) branding and secondary sub-labels removed.
  * Action Element: Retains the single-tap container extraction trigger mapped directly to the local PRoot unpacker.
 
 ### Screen 2: Environment Boot
- * Internal Service Names: Container initialization and daemon logs reference oss-daemon and oss-core rather than opencode-server.
+ * Internal Service Names: Container initialization and daemon logs reference oss-daemon and oss-core rather than forgerig-server.
  * Zero-OAuth Flow: Bypasses third-party auth gates entirely, streaming unpacking progress directly until the local WebSocket endpoint signals readiness.
 
 ### Screen 3: Unified Workspace & Agent Interface
- * Header Re-architecture: Completely removed the user profile avatar, name label, and external "ONLINE" status indicator. The top bar now strictly reports local engine telemetry (OneStopShop header paired with Daemon: aarch64-musl).
+ * Header Re-architecture: Completely removed the user profile avatar, name label, and external "ONLINE" status indicator. The top bar now strictly reports local engine telemetry (ForgeRig header paired with Daemon: aarch64-musl).
  * Shell & Tooling Namespaces: Shell prompt updated to oss@localhost:~$, and native execution calls operate through the oss-agent / oss-daemon binary interface.
  * Telemetry HUD: The bottom-right floating overlay tracks local system load, memory usage, and autonomous agent status without external network dependencies.
